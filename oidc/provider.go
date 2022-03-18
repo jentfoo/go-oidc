@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gravitational/trace"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -649,9 +650,16 @@ func (r *httpProviderConfigGetter) Get() (cfg ProviderConfig, err error) {
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	const MaxDataSize = 1024 * 1024
+	data, err := io.ReadAll(io.LimitReader(resp.Body, MaxDataSize+1))
 	if err != nil {
 		return cfg, trace.Wrap(err)
+	}
+
+	if len(data) > MaxDataSize {
+		//discard rest of the body to free up connection
+		io.Copy(ioutil.Discard, resp.Body)
+		return cfg, trace.Errorf("response exceeds maximum size of %d bytes", MaxDataSize)
 	}
 
 	if err = json.Unmarshal(data, &cfg); err != nil {

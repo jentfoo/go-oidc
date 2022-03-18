@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -392,7 +393,7 @@ func TestProviderConfigSupports(t *testing.T) {
 				},
 			},
 			fillRequiredProviderFields: true,
-			ok: true,
+			ok:                         true,
 		},
 		{
 			// invalid provider config
@@ -403,14 +404,14 @@ func TestProviderConfigSupports(t *testing.T) {
 				},
 			},
 			fillRequiredProviderFields: false,
-			ok: false,
+			ok:                         false,
 		},
 		{
 			// invalid client config
-			provider: ProviderConfig{},
-			client:   ClientMetadata{},
+			provider:                   ProviderConfig{},
+			client:                     ClientMetadata{},
 			fillRequiredProviderFields: true,
-			ok: false,
+			ok:                         false,
 		},
 	}
 
@@ -611,6 +612,17 @@ func TestHTTPProviderConfigGetter(t *testing.T) {
 			},
 			ok:        true,
 			noExpires: true,
+		},
+		// response is too large
+		{
+			dsc: "https://example.com",
+			age: time.Minute,
+			cfg: ProviderConfig{
+				Issuer:          &url.URL{Scheme: "https", Host: "example.com"},
+				ExpiresAt:       now.Add(time.Minute),
+				ScopesSupported: []string{strings.Repeat("x", 1024*1024+5)},
+			},
+			ok: false,
 		},
 	}
 
