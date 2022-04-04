@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gravitational/trace"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gravitational/trace"
 
 	"github.com/coreos/pkg/timeutil"
 	"github.com/jonboulle/clockwork"
@@ -355,9 +356,6 @@ func (p ProviderConfig) Valid() error {
 
 	if !contains(p.IDTokenSigningAlgValues, "RS256") {
 		return errors.New("id_token_signing_alg_values_supported must include 'RS256'")
-	}
-	if contains(p.TokenEndpointAuthMethodsSupported, "none") {
-		return errors.New("token_endpoint_auth_signing_alg_values_supported cannot include 'none'")
 	}
 
 	uris := []struct {
