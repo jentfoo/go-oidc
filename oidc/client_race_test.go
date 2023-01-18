@@ -63,14 +63,15 @@ func TestProviderSyncRace(t *testing.T) {
 	}
 
 	// SyncProviderConfig beings a goroutine which writes to the client's provider config.
-	c := cli.SyncProviderConfig(s.URL)
+	stop, waitForInitialSync := cli.SyncProviderConfig(s.URL)
+	waitForInitialSync()
 	if cli.providerConfig.Get().Empty() {
 		t.Errorf("want c.ProviderConfig != nil")
 	}
 
 	defer func() {
 		// stop the background process
-		c <- struct{}{}
+		stop <- struct{}{}
 	}()
 
 	for i := 0; i < 10; i++ {

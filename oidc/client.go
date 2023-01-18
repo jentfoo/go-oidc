@@ -656,12 +656,11 @@ func chooseAuthMethod(cfg ProviderConfig) (string, error) {
 }
 
 // SyncProviderConfig starts the provider config syncer
-func (c *Client) SyncProviderConfig(discoveryURL string) chan struct{} {
+func (c *Client) SyncProviderConfig(discoveryURL string) (chan struct{}, func()) {
 	r := NewHTTPProviderConfigGetter(c.httpClient, discoveryURL)
 	s := NewProviderConfigSyncer(r, c.providerConfig)
 	stop := s.Run()
-	s.WaitUntilInitialSync()
-	return stop
+	return stop, s.WaitUntilInitialSync
 }
 
 func (c *Client) maybeSyncKeys() error {

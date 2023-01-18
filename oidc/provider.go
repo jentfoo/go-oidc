@@ -517,6 +517,7 @@ func (s *ProviderConfigSyncer) Run() chan struct{} {
 			case <-s.clock.After(next.after()):
 				next = next.step(s.sync)
 			case <-stop:
+				s.initialSyncComplete()
 				return
 			}
 		}
@@ -529,6 +530,13 @@ func (s *ProviderConfigSyncer) WaitUntilInitialSync() {
 	s.initialSyncWait.Wait()
 }
 
+func (s *ProviderConfigSyncer) initialSyncComplete() {
+	if !s.initialSyncDone {
+		s.initialSyncWait.Done()
+		s.initialSyncDone = true
+	}
+}
+
 func (s *ProviderConfigSyncer) sync() (time.Duration, error) {
 	cfg, err := s.from.Get()
 	if err != nil {
@@ -539,10 +547,7 @@ func (s *ProviderConfigSyncer) sync() (time.Duration, error) {
 		return 0, fmt.Errorf("error setting provider config: %v", err)
 	}
 
-	if !s.initialSyncDone {
-		s.initialSyncWait.Done()
-		s.initialSyncDone = true
-	}
+	s.initialSyncComplete()
 
 	return nextSyncAfter(cfg.ExpiresAt, s.clock), nil
 }
