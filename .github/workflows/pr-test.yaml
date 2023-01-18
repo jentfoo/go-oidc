@@ -1,0 +1,19 @@
+name: Script Test
+run-name: Script Test
+on:
+  pull_request:
+
+jobs:
+  test:
+    name: Script Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Security Reports
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Run Test
+        run: |
+          ./test
