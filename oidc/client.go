@@ -655,7 +655,10 @@ func chooseAuthMethod(cfg ProviderConfig) (string, error) {
 	return "", errors.New("no supported auth methods")
 }
 
-// SyncProviderConfig starts the provider config syncer
+// SyncProviderConfig starts the provider config syncer.  
+// This function returns a channel used to stop the sync 
+// process, as well as a function that can be used to block 
+// until the sync process has either started or been interrupted.
 func (c *Client) SyncProviderConfig(discoveryURL string) (chan struct{}, func()) {
 	r := NewHTTPProviderConfigGetter(c.httpClient, discoveryURL)
 	s := NewProviderConfigSyncer(r, c.providerConfig)
