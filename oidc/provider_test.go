@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -722,8 +723,9 @@ func TestProviderConfigSyncerRun(t *testing.T) {
 			t.Fatalf("test %d: unexpected error: %v", i, err)
 		}
 
-		stop := syncer.Run()
-		defer close(stop)
+		ctx, cancel := context.WithCancel(context.Background())
+		syncer.Run(ctx)
+		defer cancel()
 		fc.BlockUntil(1)
 
 		// first sync

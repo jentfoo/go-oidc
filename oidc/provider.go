@@ -1,6 +1,7 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -504,9 +505,7 @@ func NewProviderConfigSyncer(from ProviderConfigGetter, to ProviderConfigSetter)
 	}
 }
 
-func (s *ProviderConfigSyncer) Run() chan struct{} {
-	stop := make(chan struct{})
-
+func (s *ProviderConfigSyncer) Run(ctx context.Context) {
 	var next pcsStepper
 	next = &pcsStepNext{aft: time.Duration(0)}
 
@@ -516,14 +515,12 @@ func (s *ProviderConfigSyncer) Run() chan struct{} {
 			select {
 			case <-s.clock.After(next.after()):
 				next = next.step(s.sync)
-			case <-stop:
+			case <-ctx.Done():
 				s.initialSyncComplete()
 				return
 			}
 		}
 	}()
-
-	return stop
 }
 
 func (s *ProviderConfigSyncer) WaitUntilInitialSync() {

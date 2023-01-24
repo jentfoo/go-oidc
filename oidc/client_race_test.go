@@ -4,6 +4,7 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -63,16 +64,15 @@ func TestProviderSyncRace(t *testing.T) {
 	}
 
 	// SyncProviderConfig beings a goroutine which writes to the client's provider config.
-	stop, waitForInitialSync := cli.SyncProviderConfig(s.URL)
-	waitForInitialSync()
+	
+	ctx, cancel := context.WithCancel(context.Background())
+	cli.SyncProviderConfig(ctx, s.URL)
 	if cli.providerConfig.Get().Empty() {
 		t.Errorf("want c.ProviderConfig != nil")
 	}
 
-	defer func() {
-		// stop the background process
-		stop <- struct{}{}
-	}()
+	// stop the background process
+	defer cancel()
 
 	for i := 0; i < 10; i++ {
 		time.Sleep(5 * time.Millisecond)

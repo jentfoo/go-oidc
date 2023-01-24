@@ -1,6 +1,7 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -656,14 +657,13 @@ func chooseAuthMethod(cfg ProviderConfig) (string, error) {
 }
 
 // SyncProviderConfig starts the provider config syncer.  
-// This function returns a channel used to stop the sync 
-// process, as well as a function that can be used to block 
-// until the sync process has either started or been interrupted.
-func (c *Client) SyncProviderConfig(discoveryURL string) (chan struct{}, func()) {
+// This function accepts a Context that can be completed 
+// when the invoker wants the sync to stop.
+func (c *Client) SyncProviderConfig(ctx context.Context, discoveryURL string) {
 	r := NewHTTPProviderConfigGetter(c.httpClient, discoveryURL)
 	s := NewProviderConfigSyncer(r, c.providerConfig)
-	stop := s.Run()
-	return stop, s.WaitUntilInitialSync
+	s.Run(ctx)
+	s.WaitUntilInitialSync()
 }
 
 func (c *Client) maybeSyncKeys() error {
