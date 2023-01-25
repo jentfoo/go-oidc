@@ -724,8 +724,8 @@ func TestProviderConfigSyncerRun(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()  // in case of error
 		syncer.Run(ctx)
-		defer cancel()
 		fc.BlockUntil(1)
 
 		// first sync
@@ -744,6 +744,7 @@ func TestProviderConfigSyncerRun(t *testing.T) {
 		if tt.count != from.getCount {
 			t.Fatalf("test %d: want: %v, got: %v", i, tt.count, from.getCount)
 		}
+		cancel()
 	}
 }
 
