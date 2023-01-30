@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gravitational/trace"
@@ -493,15 +492,15 @@ type ProviderConfigSyncer struct {
 	to    ProviderConfigSetter
 	clock clockwork.Clock
 
-	initialSyncDone bool
-	initialSyncWait sync.WaitGroup
+	initialSyncWaitChan chan struct{}
 }
 
 func NewProviderConfigSyncer(from ProviderConfigGetter, to ProviderConfigSetter) *ProviderConfigSyncer {
 	return &ProviderConfigSyncer{
-		from:  from,
-		to:    to,
-		clock: clockwork.NewRealClock(),
+		from:                from,
+		to:                  to,
+		clock:               clockwork.NewRealClock(),
+    initialSyncWaitChan: make(chan struct{}),
 	}
 }
 
@@ -509,7 +508,6 @@ func (s *ProviderConfigSyncer) Run(ctx context.Context) {
 	var next pcsStepper
 	next = &pcsStepNext{aft: time.Duration(0)}
 
-	s.initialSyncWait.Add(1)
 	go func() {
 		for {
 			select {
@@ -524,14 +522,16 @@ func (s *ProviderConfigSyncer) Run(ctx context.Context) {
 }
 
 func (s *ProviderConfigSyncer) WaitUntilInitialSync() {
-	s.initialSyncWait.Wait()
+	<-s.initialSyncWaitChan
 }
 
 func (s *ProviderConfigSyncer) initialSyncComplete() {
-	if !s.initialSyncDone {
-		s.initialSyncWait.Done()
-		s.initialSyncDone = true
-	}
+  select {
+  case <-s.initialSyncWaitChan:
+    // channel already closed
+  default:
+    close(s.initialSyncWaitChan)
+  }
 }
 
 func (s *ProviderConfigSyncer) sync() (time.Duration, error) {
